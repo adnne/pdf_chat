@@ -22,11 +22,10 @@ A Django-based application that enables intelligent conversations with PDF docum
 
 ## Prerequisites
 
-- Python 3.8+
 - Docker and Docker Compose
 - NVIDIA API Key for embeddings generation
 
-## Installation
+## Installation and Setup
 
 1. Clone the repository:
 
@@ -78,9 +77,7 @@ A Django-based application that enables intelligent conversations with PDF docum
 
 2. Upload a PDF document through the API:
 
-   ```bash
-   curl -X POST -F "file=@your_document.pdf" http://localhost:8000/api/documents/
-   ```
+   `http://localhost:8000/api/documents/`
 
 3. The document will be automatically processed:
 
@@ -89,12 +86,19 @@ A Django-based application that enables intelligent conversations with PDF docum
    - Generating embeddings
    - Storing in Qdrant for similarity search
 
-4. Query the document using the search endpoint:
-   ```bash
-   curl -X POST -H "Content-Type: application/json" \
-   -d '{"query": "your question here", "document_id": 1}' \
-   http://localhost:8000/api/documents/1/search/
-   ```
+4. API Endpoints:
+
+   a. Upload a document:
+
+   - URL: `http://localhost:8000/api/documents/`
+
+   b. Create a conversation:
+
+   - URL: `http://localhost:8000/api/conversations/`
+
+   c. Chat with the document:
+
+   - URL: `http://localhost:8000/api/conversations/{conversation_id}/chat/`
 
 ## Project Structure
 
@@ -105,31 +109,6 @@ A Django-based application that enables intelligent conversations with PDF docum
   - `utils.py`: Utility functions for text processing and embeddings
   - `views.py`: API endpoints
   - `qdrant_client.py`: Qdrant vector database client
-
-## Development
-
-1. Install development dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Run migrations:
-
-   ```bash
-   python manage.py migrate
-   ```
-
-3. Start the development server:
-
-   ```bash
-   python manage.py runserver
-   ```
-
-4. Start Celery worker:
-   ```bash
-   celery -A core worker -l info
-   ```
 
 ## Contributing
 
