@@ -38,9 +38,33 @@ A Django-based application that enables intelligent conversations with PDF docum
 2. Create a `.env` file in the project root with the following variables:
 
    ```env
-   NVIDIA_API_KEY=your_nvidia_api_key
-   DJANGO_SECRET_KEY=your_django_secret_key
-   DEBUG=True  # Set to False in production
+   # Django settings
+   DEBUG=1
+   SECRET_KEY=your-secret-key-here
+   DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+
+   # Database settings
+   POSTGRES_DB=pdf_chat
+   POSTGRES_USER=pdf_chat_user
+   POSTGRES_PASSWORD=pdf_chat_password
+   POSTGRES_HOST=db
+
+   # Redis settings
+   REDIS_URL=redis://redis:6379/0
+
+   # NVIDIA settings
+   NVIDIA_API_KEY=your-nvidia-api-key
+   QDRANT_HOST=http://qdrant:6333
+
+   # Celery settings
+   CELERY_BROKER_URL=redis://redis:6379/0
+   CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+   # CORS settings
+   CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+
+   # File upload settings
+   MAX_UPLOAD_SIZE=10485760  # 10MB in bytes
    ```
 
 3. Build and start the containers:
