@@ -18,6 +18,10 @@ RUN apt-get update && apt-get install -y \
 
 COPY requirements.txt .
 
+RUN pip install wheel
+RUN pip install dj-rest-auth
+
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .

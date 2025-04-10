@@ -27,6 +27,20 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     stdin_open: true
     tty: true
+    
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - django
+    environment:
+      - NODE_ENV=development
 
   qdrant:
     image: qdrant/qdrant:v1.8.2
