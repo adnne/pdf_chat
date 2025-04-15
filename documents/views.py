@@ -10,6 +10,11 @@ from .utils import search_similar_chunks
 from langchain.schema import HumanMessage, AIMessage, SystemMessage
 from django.conf import settings
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from django.views.decorators.clickjacking import xframe_options_exempt
+from django.http import FileResponse, Http404
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from rest_framework.permissions import IsAuthenticated
 
 class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
@@ -22,6 +27,16 @@ class DocumentViewSet(viewsets.ModelViewSet):
         document = serializer.save()
         # Trigger async processing of the document
         process_document.delay(document.id)
+
+@xframe_options_exempt
+@login_required
+def serve_pdf(request, pk):
+    try:
+        document = Document.objects.get(pk=pk, user=request.user)
+        return FileResponse(document.file.open('rb'), content_type='application/pdf')
+    except Document.DoesNotExist:
+        raise Http404("Document not found or you don't have permission.")
+    
 
 class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer

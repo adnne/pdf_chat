@@ -16,6 +16,7 @@ class Document(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='documents')
+    file_size = models.PositiveIntegerField(null=True, blank=True) 
 
     def __str__(self):
         return self.title
