@@ -35,12 +35,11 @@ class ChatOutputSerializer(serializers.ModelSerializer):
         read_only_fields = ['role', 'content', 'created_at']
 
 class ConversationSerializer(serializers.ModelSerializer):
-    messages = MessageSerializer(many=True, read_only=True)
     document_title = serializers.CharField(source='document.title', read_only=True)
 
     class Meta:
         model = Conversation
-        fields = ['id', 'document', 'document_title', 'user', 'messages', 'created_at', 'updated_at']
+        fields = ['id', 'document', 'document_title', 'user', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at', 'user']
 
     def create(self, validated_data):

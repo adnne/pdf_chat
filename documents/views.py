@@ -15,6 +15,7 @@ from django.http import FileResponse, Http404
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 
 class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
@@ -39,12 +40,26 @@ def serve_pdf(request, pk):
         raise Http404("Document not found or you don't have permission.")
     
 
+class MessagePagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         return Conversation.objects.filter(user=self.request.user)
+    
+    @action(detail=True, methods=['get'])
+    def messages(self, request, pk=None):
+        conversation = self.get_object()
+        paginator = MessagePagination()
+        messages = conversation.messages.all().order_by('-created_at')
+        page = paginator.paginate_queryset(messages, request)
+        serializer = MessageSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     
     @action(detail=True, methods=['post'],serializer_class=ChatInputSerializer)
     def chat(self, request, pk=None):
