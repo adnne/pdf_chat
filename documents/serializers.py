@@ -2,9 +2,10 @@ from rest_framework import serializers
 from .models import Document, DocumentChunk, Conversation, Message
 
 class DocumentSerializer(serializers.ModelSerializer):
+    conversation = serializers.IntegerField(source='conversation.id', read_only=True)
     class Meta:
         model = Document
-        fields = ['id', 'title', 'file', 'uploaded_at', 'processed', 'user', 'file_size']
+        fields = ['id', 'title', 'file', 'uploaded_at', 'processed', 'user', 'file_size','conversation']
         read_only_fields = ['uploaded_at', 'processed', 'user']
 
     def create(self, validated_data):

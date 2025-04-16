@@ -20,7 +20,7 @@ class Document(models.Model):
 
     def __str__(self):
         return self.title
-
+    
 class DocumentChunk(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='chunks')
     content = models.TextField()
@@ -38,7 +38,7 @@ class DocumentChunk(models.Model):
         return f"{self.document.title} - Chunk {self.chunk_number}"
 
 class Conversation(models.Model):
-    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='conversations')
+    document = models.OneToOneField(Document, on_delete=models.CASCADE, related_name='conversation')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversations')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

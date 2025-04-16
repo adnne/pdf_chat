@@ -26,6 +26,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         document = serializer.save()
         # Trigger async processing of the document
+        Conversation.objects.create(document=document, user=document.user)   
         process_document.delay(document.id)
 
 @xframe_options_exempt
