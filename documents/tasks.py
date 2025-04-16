@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 @shared_task
 def process_document(document_id: int) -> None:
     """Process a PDF document: extract text, create chunks, generate embeddings, and store in database."""
-    return
     try:
         # Get the document object
         document = Document.objects.get(id=document_id)
