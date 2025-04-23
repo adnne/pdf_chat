@@ -17,6 +17,11 @@ from django.utils.decorators import method_decorator
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 
+
+import time
+import random
+from django.http import StreamingHttpResponse
+
 class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
     permission_classes = [IsAuthenticated]
@@ -45,6 +50,22 @@ class MessagePagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 100
 
+
+
+def random_message_stream():
+    messages = [
+        "This is a test message.",
+        "Streaming is cool!",
+        "Hello from the server.",
+        "This is a random message.",
+        "More data coming through..."
+    ]
+    for _ in range(10):  # stream 10 messages for example
+        yield f"data: {random.choice(messages)}\n\n"
+        time.sleep(1)  # simulate delay
+
+
+
 class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
     permission_classes = [IsAuthenticated]
@@ -52,6 +73,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Conversation.objects.filter(user=self.request.user)
     
+
     @action(detail=True, methods=['get'])
     def messages(self, request, pk=None):
         conversation = self.get_object()
@@ -61,7 +83,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
         serializer = MessageSerializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)
     
-    @action(detail=True, methods=['post'],serializer_class=ChatInputSerializer)
+    @action(detail=True, methods=['post'], serializer_class=ChatInputSerializer)
     def chat(self, request, pk=None):
         conversation = self.get_object()
         serializer = ChatInputSerializer(data=request.data)
@@ -70,21 +92,18 @@ class ConversationViewSet(viewsets.ModelViewSet):
         
         message_content = serializer.validated_data['message']
         
-        # Save user message
         Message.objects.create(
             conversation=conversation,
             role='user',
             content=message_content
         )
         
-        # Get relevant document chunks
         similar_chunks = search_similar_chunks(
             query=message_content,
             document=conversation.document,
             top_k=3
         )
         
-        # Prepare conversation history
         messages = []
         system_prompt = (
             "You are a helpful AI assistant that answers questions about the document. "
@@ -92,13 +111,10 @@ class ConversationViewSet(viewsets.ModelViewSet):
             "If you're unsure or the answer isn't in the context, say so."
         )
         messages.append(SystemMessage(content=system_prompt))
-        
-        # Add relevant context
         context = '\n\n'.join([chunk['content'] for chunk in similar_chunks])
         context_prompt = f"Context from the document:\n{context}"
         messages.append(SystemMessage(content=context_prompt))
         
-        # Add conversation history (last 5 messages)
         history = conversation.messages.order_by('-created_at')[:5][::-1]
         for msg in history:
             if msg.role == 'user':
@@ -106,26 +122,35 @@ class ConversationViewSet(viewsets.ModelViewSet):
             elif msg.role == 'assistant':
                 messages.append(AIMessage(content=msg.content))
         
-        # Get response from NVIDIA AI Foundation Models
-        try:
-            chat = ChatNVIDIA(
-                model='meta/llama3-8b-instruct',
-                temperature=0.7,
-                max_tokens=1024,
-                base_url="https://integrate.api.nvidia.com/v1", 
-                api_key=settings.NVIDIA_API_KEY 
-            )
-            response = chat(messages)
-        except Exception as e:
-            return Response({"error": f"AI API error: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-              
+        def stream_response():
+            try:
+                chat = ChatNVIDIA(
+                    model='meta/llama3-8b-instruct',
+                    temperature=0.7,
+                    max_tokens=1024,
+                    base_url="https://integrate.api.nvidia.com/v1", 
+                    api_key=settings.NVIDIA_API_KEY 
+                )
 
+                full_content = ""
+
+                for chunk in chat.stream(messages):
+                    content = chunk.content  # Extract text from chunk
+                    full_content += content
+                    yield f"data: {content}\n\n"
+                    time.sleep(0.05)
+
+                Message.objects.create(
+                    conversation=conversation,
+                    role='assistant',
+                    content=full_content
+                )
+
+            except Exception as e:
+                yield f"data: [ERROR] AI API error: {str(e)}\n\n"
         
-        # Save assistant message
-        assistant_message = Message.objects.create(
-            conversation=conversation,
-            role='assistant',
-            content=response.content
-        )
+        response = StreamingHttpResponse(stream_response(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
         
-        return Response(MessageSerializer(assistant_message).data)
+        return response
